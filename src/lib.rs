@@ -40,20 +40,24 @@ fn scale(n: f64, factor: i32) -> i64 {
 }
 
 #[inline(always)]
-fn encode(delta: i64, output: &mut String) -> Result<(), PolylineError> {
+fn encode(delta: i64, output: &mut String) {
     let mut value = delta << 1;
     if value < 0 {
         value = !value;
     }
     while value >= 0x20 {
-        let from_char = char::from_u32(((0x20 | (value & 0x1f)) + 63) as u32)
-            .ok_or(PolylineError::EncodeToCharError)?;
+        //   0010 0000
+        // |
+        //   (xxxx xxxx
+        //  & 0001 1111)
+        //
+        //  + 0011 1111
+        let from_char = unsafe { char::from_u32_unchecked(((0x20 | (value & 0x1f)) + 0x3f) as u32) };
         output.push(from_char);
         value >>= 5;
     }
-    let from_char = char::from_u32((value + 63) as u32).ok_or(PolylineError::EncodeToCharError)?;
+    let from_char = unsafe { char::from_u32_unchecked((value + 0x3f) as u32) };
     output.push(from_char);
-    Ok(())
 }
 
 /// Encodes a Google Encoded Polyline.
@@ -95,18 +99,8 @@ where
             x: scale(next.x, factor),
             y: scale(next.y, factor),
         };
-        encode(scaled_next.y - previous.y, &mut output).map_err(|_| {
-            PolylineError::CoordEncodingError {
-                coord: next,
-                idx: i,
-            }
-        })?;
-        encode(scaled_next.x - previous.x, &mut output).map_err(|_| {
-            PolylineError::CoordEncodingError {
-                coord: next,
-                idx: i,
-            }
-        })?;
+        encode(scaled_next.y - previous.y, &mut output);
+        encode(scaled_next.x - previous.x, &mut output);
         previous = scaled_next;
     }
     Ok(output)

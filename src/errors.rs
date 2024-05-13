@@ -25,12 +25,6 @@ pub enum PolylineError {
         /// The string index of the character that caused the decoding error
         idx: usize,
     },
-    EncodeToCharError,
-    CoordEncodingError {
-        coord: Coord<f64>,
-        /// The array index of the coordinate error
-        idx: usize,
-    },
 }
 
 impl std::error::Error for PolylineError {}
@@ -48,14 +42,6 @@ impl std::fmt::Display for PolylineError {
             }
             PolylineError::NoLongError { idx } => {
                 write!(f, "no longitude to go with latitude at index: {}", idx)
-            }
-            PolylineError::EncodeToCharError => write!(f, "couldn't encode character"),
-            PolylineError::CoordEncodingError { coord, idx } => {
-                write!(
-                    f,
-                    "the coordinate {:?} at index: {} could not be encoded",
-                    coord, idx
-                )
             }
         }
     }
